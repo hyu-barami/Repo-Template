@@ -1,0 +1,40 @@
+name: Restart application deployment at k8s cluster
+run-name: Restart deployment
+on:
+  workflow_call:
+    inputs:
+      dummy:
+        description: 'Dummy input field'
+        required: false
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      dummy:
+        description: 'Dummy input field'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+      
+      - name: install kubectl
+        uses: Azure/setup-kubectl@v3
+        with:
+          version: 'v1.26.2'
+
+      # We need to find better way. because someone can print kubeconfig file...
+      - name: save kubeconfig using secret
+        run: echo $APP_KUBECONFIG_YAML_BASE64 | base64 --decode >> kubeconfig.yaml
+        env: 
+          APP_KUBECONFIG_YAML_BASE64: ${{ secrets.APP_KUBECONFIG_YAML_BASE64 }}
+      
+      # We can't remove `--insecure-skip-tls-verify` option now.
+      - name: update deployment
+        run: kubectl apply -f k8s/nginx-example-deployment.yaml --kubeconfig kubeconfig.yaml --insecure-skip-tls-verify
+

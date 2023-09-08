@@ -1,0 +1,51 @@
+name: Build docker image
+run-name: Build docker image using ${{ inputs.branch }} by @${{ github.actor }}
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: 'container image name'
+        type: string
+        required: false
+      image_tag:
+        description: 'container image tag'
+        type: string
+        required: false
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: 'container image name'
+        type: string
+        required: false
+      image_tag:
+        description: 'container image tag'
+        type: string
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: login to ghcr.io
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_HYU_BARAMI_CONTAINER_REGISTRY_TOKEN }}
+
+      - name: build container image and push
+        uses: docker/build-push-action@v4
+        with:
+          context: ./nginx-example
+          push: true
+          tags: ghcr.io/hyu-barami/${{ inputs.image_name || github.event.repository.name }}:${{ inputs.image_tag || 'latest' }}
