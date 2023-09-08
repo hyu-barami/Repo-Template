@@ -1,0 +1,27 @@
+name: Build container image and restart application deployment
+run-name: Build and restart
+on:
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: 'container image name'
+        type: string
+        required: false
+      image_tag:
+        description: 'container image tag'
+        type: string
+        required: false
+
+jobs:
+  call-build-workflow:
+    name: build
+    uses: ./.github/workflows/build_docker_image.yml
+    with:
+      image_name: ${{ inputs.image_name || github.event.repository.name }}
+      image_tag: ${{ inputs.image_tag || 'latest' }}
+    secrets: inherit
+  call-restart-workflow:
+    name: restart
+    uses: ./.github/workflows/restart_k8s_deployment.yml
+    secrets: inherit
+    needs: call-build-workflow
